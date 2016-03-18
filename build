@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd $1
+docker build -t apache2.2-php$1 --force-rm --no-cache .
+cd ..

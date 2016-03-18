@@ -1,0 +1,107 @@
+#!/bin/sh
+
+usage() {
+	echo "usage: git flow <subcommand>"
+	echo
+	echo "Available subcommands are:"
+	echo "  dockr ls"
+	echo "  dockr ssh CONTAINER_NAME"
+	echo "  dockr start IMAGE CONTAINER_NAME"
+	echo "  dockr stop CONTAINER_NAME"
+	echo "  dockr destroy CONTAINER_NAME"
+	echo "  dockr ip CONTAINER_NAME"
+	echo "  dockr all stop"
+	echo "  dockr all kill"
+	echo "  dockr all rm"
+	echo "  dockr all rmi"
+	echo "Try 'git flow <subcommand> help' for details."
+}
+
+main() {
+	if [ $# -lt 1 ]; then
+		usage
+		exit 1
+	fi
+
+    case "$1" in
+            dmstart)
+                    docker-machine restart default
+                    eval $(docker-machine env default)
+                    docker-machine env default
+                    ;;
+            dmenv)
+                    eval $(docker-machine env default)
+                    docker-machine ip default
+                    ;;
+            rm)
+                    docker rm -f $2
+                    ;;
+            clean)
+                    docker rm $(docker ps -a -q -f status=exited)
+                    docker ps -a
+                    ;;
+            ls)
+                    docker ps -a
+                    ;;
+            ps2)
+                    docker ps --format "table {{.ID}}\t {{.Names}}\t {{.Status}}"
+                    ;;
+            mounted)
+                    docker inspect -f {{.Mounts}} $2
+                    ;;
+            start)
+                    id=`docker run -d -P --name=$3 $2`
+                    echo $id;
+                    docker ps -a
+                    ;;
+            stop)
+                    docker stop $(docker ps -aq --filter="name=$2")
+                    docker ps -a
+                    ;;
+            ssh)
+                    id=`docker ps -aq --filter="name=$2"`
+                    echo $id
+                    docker exec -ti $id /bin/bash
+                    ;;
+            destroy)
+                    id=`docker ps -aq --filter="name=$2"`
+                    docker kill $id
+                    docker rm $id
+                    ;;
+            all)
+                    case "$2" in
+                        pull)
+                            docker images | awk '{print $1":"$2}' | xargs -L1 docker pull
+                            ;;
+                        stop)
+                            docker stop $(docker ps -aq)
+                            docker ps -a
+                            ;;
+                        kill)
+                            docker kill $(docker ps -aq)
+                            docker ps -a
+                            ;;
+                        rm)
+                            docker rm -f $(docker ps -aq)
+                            docker ps -a
+                            ;;
+                        rminone)
+                            docker rmi -f $(docker images | grep "<none>" | awk '{print $3}') 
+                            docker images
+                            ;;
+                        rmi)
+                            docker rm -f $(docker ps -aq)
+                            docker rmi $(docker images -q)
+                            docker images
+                            ;;
+                    esac
+                    ;;
+            ip)
+                    IP=$(docker inspect -f {{.NetworkSettings.IPAddress}} $2)
+                    echo $IP
+                    ;;
+    esac
+
+}
+
+main "$@"
