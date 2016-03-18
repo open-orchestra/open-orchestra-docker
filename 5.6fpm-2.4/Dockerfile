@@ -1,4 +1,4 @@
-FROM openorchestra/openorchestra:apache2.4
+FROM openorchestra/open-orchestra:apache2.4
 
 MAINTAINER Raphaël Carles <raphael.carles@businessdecision.com>
 
